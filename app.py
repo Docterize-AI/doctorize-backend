@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask, redirect, url_for, request
+from flask_cors import CORS, cross_origin
 # 
 import numpy as np
 import pandas as pd
@@ -47,35 +48,36 @@ dict = {0: 'COVID-19 PNEUMONIA',
         1: 'NORMAL', 
         2: 'NON-COVID PNEUMONIA'}
 
-localImages = [
-   
-    'covid2.jpeg',
-    'normal1.jpeg',
-    'normal2.jpeg',
-    'pneumonia1.jpeg',
-    'pneumonia2.jpeg',
-     'covid1.jpeg',
-]
-preds = []
-predictedClass = []
+app = Flask(__name__)
+# CORS(app, support_credentials=True)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
-for e in localImages:
-    path = './images/' + e
-    img = image.load_img(path, target_size=(224,224))
+@app.route("/")
+def hello():
+  return "hello"
+
+app.config["IMAGE_UPLOADS"] = "./images"
+
+#To use the doctorize button in our web-app
+@app.route('/upload',methods=['POST'])
+@cross_origin(supports_credentials=True)
+def upload():
+    uploadedImgStr = request.files["file"]
+    filepath = os.path.join(app.config["IMAGE_UPLOADS"], uploadedImgStr.filename)
+    uploadedImgStr.save(filepath)
+    print("stored as: "+filepath)
+
+    img = image.load_img(filepath, target_size=(224,224))
+    print(img)
     x = image.img_to_array(img)
+    print(x)
     x = np.expand_dims(x, axis = 0)
 
     images = np.vstack([x])
     preds = model.predict(images, batch_size = 32)
     predictedClass = np.argmax(preds, axis=1)
     predictedClass = np.vectorize(dict.get)(predictedClass)
-    print(type(preds[0]))
-# 
-app = Flask(__name__)
-
-@app.route("/")
-def hello():
-  return "result: " + ''.join(predictedClass) + " " + str(np.max(preds))
+    return "result: " + ''.join(predictedClass) + " " + str(np.max(preds))
 
 if __name__ == "__main__":
   app.run()
