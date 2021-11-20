@@ -141,3 +141,4 @@ cython_debug/
 bin/
 include/
 pip-selfcheck.json
+pyvenv.cfg
